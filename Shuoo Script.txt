@@ -1,0 +1,107 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "Shouu Script",
+   LoadingTitle = "Loading Script...",
+   LoadingSubtitle = "By Shouu",
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "PromptSpamConfig",
+      FileName = "Spammer"
+   }
+})
+
+local Tab = Window:CreateTab("Main", 4483362458)
+local Section = Tab:CreateSection("Spam Controls")
+
+-- Function para sa Proximity Bypass
+local function bypassAndFire(v)
+    if v:IsA("ProximityPrompt") then
+        v.MaxActivationDistance = 99999
+        v.RequiresLineOfSight = false
+        fireproximityprompt(v)
+    end
+end
+
+-- Burst Mode (100x)
+Tab:CreateButton({
+   Name = "(Talk Npc)",
+   Interact = 'Click',
+   Callback = function()
+      Rayfield:Notify({
+         Title = "Burst Activated!",
+         Content = "Sending 100 requests...",
+         Duration = 2,
+         Image = 4483362458,
+      })
+      for _, v in pairs(game.Workspace:GetDescendants()) do
+         if v:IsA("ProximityPrompt") and v.Parent.Name == "PromptAttachment" and v.Parent.Parent.Name == "Head" then
+            task.spawn(function()
+               for i = 1, 100 do bypassAndFire(v) end
+            end)
+         end
+      end
+   end,
+})
+
+-- Auto Spam Toggle
+local autoSpam = false
+Tab:CreateToggle({
+   Name = "ðŸ”„ Auto Talk NPC",
+   CurrentValue = false,
+   Flag = "Toggle1", 
+   Callback = function(Value)
+      autoSpam = Value
+      if autoSpam then
+         task.spawn(function()
+            while autoSpam do
+               for _, v in pairs(game.Workspace:GetDescendants()) do
+                  if v:IsA("ProximityPrompt") and v.Parent.Name == "PromptAttachment" and v.Parent.Parent.Name == "Head" then
+                     bypassAndFire(v)
+                  end
+               end
+               task.wait(0.1)
+            end
+         end)
+      end
+   end,
+})
+
+local SectionBring = Tab:CreateSection("Bring")
+
+-- Loop Bring Logic
+local loopBring = false
+Tab:CreateToggle({
+   Name = "Loopbring All Npc",
+   CurrentValue = false,
+   Flag = "BringToggle",
+   Callback = function(Value)
+      loopBring = Value
+      if loopBring then
+         task.spawn(function()
+            while loopBring do
+               local char = game.Players.LocalPlayer.Character
+               if char and char:FindFirstChild("HumanoidRootPart") then
+                  -- GetChildren lang para hindi pasok sa folders
+                  for _, obj in pairs(game.Workspace:GetChildren()) do
+                     -- Model lang, hindi folder, at hindi player character
+                     if obj:IsA("Model") and not game.Players:GetPlayerFromCharacter(obj) then
+                        -- Sinisiguradong may PrimaryPart o kahit anong Part para mai-move
+                        local targetPart = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+                        if targetPart then
+                           targetPart.CFrame = char.HumanoidRootPart.CFrame * CFrame.new(0, 0, -5)
+                        end
+                     end
+                  end
+               end
+               task.wait(0.1) -- Smooth loop
+            end
+         end)
+      end
+   end,
+})
+
+local Section2 = Tab:CreateSection("Settings")
+Tab:CreateLabel("Kumagg!")
+
+Rayfield:LoadConfiguration()
