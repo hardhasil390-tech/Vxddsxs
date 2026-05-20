@@ -4,14 +4,21 @@ local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 
--- Siguraduhing gumagana ang Http Request ng Executor mo
-local request = syn and syn.request or http_request or request or HttpPost
+-- Mas pinalakas na check para sa mga modernong executor (Solara, Wave, Celery, atbp.)
+local custom_request = (((syn and syn.request) or http_request) or (http and http.request)) or request
 
 -- [[ UI SETUP - LOWKEY & DARK MODE ]]
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "PrivateChatHub"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = game:CoreGui
+
+-- Safety layer para sa CoreGui access
+pcall(function()
+    ScreenGui.Parent = game:GetService("CoreGui")
+end)
+if not ScreenGui.Parent then
+    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+end
 
 -- Main Window (Glassmorphic vibe)
 local MainFrame = Instance.new("Frame")
@@ -39,7 +46,7 @@ Title.Font = Enum.Font.SourceSansBold
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = MainFrame
 
--- Chat Log (Dito lalabas ang mga usapan)
+-- Chat Log
 local ScrollingFrame = Instance.new("ScrollingFrame")
 ScrollingFrame.Size = UDim2.new(0, 330, 0, 160)
 ScrollingFrame.Position = UDim2.new(0, 10, 0, 35)
@@ -52,7 +59,7 @@ local UIListLayout = Instance.new("UIListLayout")
 UIListLayout.Parent = ScrollingFrame
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- Input Box (Dito magta-type)
+-- Input Box
 local TextBox = Instance.new("TextBox")
 TextBox.Size = UDim2.new(0, 250, 0, 30)
 TextBox.Position = UDim2.new(0, 10, 0, 205)
@@ -85,7 +92,7 @@ local ButtonCorner = Instance.new("UICorner")
 ButtonCorner.CornerRadius = UDim.new(0, 5)
 ButtonCorner.Parent = SendButton
 
--- Toggle Button (Para maitago ang chat kung may nakikitingin)
+-- Toggle Button
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Size = UDim2.new(0, 60, 0, 25)
 ToggleButton.Position = UDim2.new(0, 10, 0, 10)
@@ -117,26 +124,32 @@ local function appendChat(sender, message)
     TextLabel.TextXAlignment = Enum.TextXAlignment.Left
     TextLabel.Parent = ScrollingFrame
     
-    -- Automatic scroll pababa kapag may bagong chat
     ScrollingFrame.CanvasPosition = Vector2.new(0, ScrollingFrame.AbsoluteWindowSize.Y * 10)
 end
 
 local function sendToDiscord(msg)
-    if not request then return end
+    -- Safety Check: Kung walang nakitang valid request function ang executor, mag-wa-warn lang imbes na mag-crash
+    if not custom_request then 
+        warn("[Private Chat Error]: Ang executor mo ay hindi sumusuporta sa HTTP Requests / Webhooks.")
+        return 
+    end
     
     local data = {
         ["username"] = LocalPlayer.Name .. " (In-Game)",
         ["content"] = msg
     }
     
-    local response = request({
-        Url = WEBHOOK_URL,
-        Method = "POST",
-        Headers = {
-            ["Content-Type"] = "application/json"
-        },
-        Body = HttpService:JSONEncode(data)
-    })
+    -- Pinalitan ng pcall para hindi mag-error ang laro kahit mag-fail ang discord ping
+    pcall(function()
+        custom_request({
+            Url = WEBHOOK_URL,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = HttpService:JSONEncode(data)
+        })
+    end)
 end
 
 -- Pagsend kapag clinick ang button o pinindot ang Enter
@@ -146,8 +159,6 @@ local function onSend()
         TextBox.Text = ""
         appendChat(LocalPlayer.Name, text)
         sendToDiscord(text)
-        
-        -- Dito natin idudugtong ang cross-server sync database mamaya
     end
 end
 
