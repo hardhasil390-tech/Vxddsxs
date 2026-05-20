@@ -1,107 +1,200 @@
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local LocalPlayer = Players.LocalPlayer
 
-local Window = Rayfield:CreateWindow({
-   Name = "Shouu Script",
-   LoadingTitle = "Loading Script...",
-   LoadingSubtitle = "By Shouu",
-   ConfigurationSaving = {
-      Enabled = true,
-      FolderName = "PromptSpamConfig",
-      FileName = "Spammer"
-   }
-})
+local Config = {
+    BanFileName = "dev_script_banlist.txt"
+}
 
-local Tab = Window:CreateTab("Main", 4483362458)
-local Section = Tab:CreateSection("Spam Controls")
+local MY_USERNAME = "Venomsnake20234"
 
--- Function para sa Proximity Bypass
-local function bypassAndFire(v)
-    if v:IsA("ProximityPrompt") then
-        v.MaxActivationDistance = 99999
-        v.RequiresLineOfSight = false
-        fireproximityprompt(v)
+local HardBannedList = {
+    ["PangalanNgBannedNaPlayer"] = true,
+}
+
+local isFileBanned = false
+if isfile then
+    isFileBanned = isfile(Config.BanFileName)
+end
+
+if HardBannedList[LocalPlayer.Name] or HardBannedList[tostring(LocalPlayer.UserId)] or isFileBanned then
+    local target = CoreGui
+    if target:FindFirstChild("Ban_WarningUI") then target.Ban_WarningUI:Destroy() end
+    
+    local banSG = Instance.new("ScreenGui", target); banSG.Name = "Ban_WarningUI"; banSG.ResetOnSpawn = false
+    local banFrame = Instance.new("Frame", banSG)
+    banFrame.Size = UDim2.new(0, 380, 0, 160)
+    banFrame.Position = UDim2.new(0.5, -190, 0.4, -80)
+    banFrame.BackgroundColor3 = Color3.fromRGB(25, 10, 15) 
+    Instance.new("UICorner", banFrame).CornerRadius = UDim.new(0, 12)
+    
+    local banStroke = Instance.new("UIStroke", banFrame)
+    banStroke.Color = Color3.fromRGB(255, 50, 50); banStroke.Thickness = 2 
+    
+    local banTitle = Instance.new("TextLabel", banFrame)
+    banTitle.Size = UDim2.new(1, 0, 0, 40)
+    banTitle.Text = "🚫 BANNED 🚫"
+    banTitle.TextColor3 = Color3.fromRGB(255, 50, 50)
+    banTitle.Font = Enum.Font.GothamBlack; banTitle.TextSize = 18; banTitle.BackgroundTransparency = 1
+    
+    local banMsg = Instance.new("TextLabel", banFrame)
+    banMsg.Size = UDim2.new(1, -30, 1, -50)
+    banMsg.Position = UDim2.new(0, 15, 0, 45)
+    banMsg.Text = "Your Account has been PERMANENTLY BANNED from using DEV Scripts by the Developer.\n\nReason: ACCESS DENIED."
+    banMsg.TextColor3 = Color3.fromRGB(255, 255, 255)
+    banMsg.Font = Enum.Font.GothamBold; banMsg.TextSize = 13; banMsg.TextWrapped = true; banMsg.BackgroundTransparency = 1
+
+    return 
+end
+
+local function checkAdminCommand(playerWhoChatted, message)
+    if playerWhoChatted.Name == MY_USERNAME then        
+        local words = string.split(message, " ")
+        
+        if words[1] == "/kick" and words[2] then
+            local targetName = string.lower(words[2])
+            if string.find(string.lower(LocalPlayer.Name), targetName) then
+                task.wait(0.1)
+                LocalPlayer:Kick("🔴 You Kicked From This Experience By Dev.")
+            end
+        end
+        
+        if words[1] == "/ban" and words[2] then
+            local targetName = string.lower(words[2])
+            if string.find(string.lower(LocalPlayer.Name), targetName) then
+                if writefile then 
+                    writefile(Config.BanFileName, "Banned by Dev " .. MY_USERNAME) 
+                end
+                task.wait(0.1)
+                LocalPlayer:Kick("🚫 YOU HAVE BEEN PERMANENTLY BANNED FROM DEV SCRIPTS.")
+            end
+        end
     end
 end
 
--- Burst Mode (100x)
-Tab:CreateButton({
-   Name = "(Talk Npc)",
-   Interact = 'Click',
-   Callback = function()
-      Rayfield:Notify({
-         Title = "Burst Activated!",
-         Content = "Sending 100 requests...",
-         Duration = 2,
-         Image = 4483362458,
-      })
-      for _, v in pairs(game.Workspace:GetDescendants()) do
-         if v:IsA("ProximityPrompt") and v.Parent.Name == "PromptAttachment" and v.Parent.Parent.Name == "Head" then
-            task.spawn(function()
-               for i = 1, 100 do bypassAndFire(v) end
-            end)
-         end
-      end
-   end,
-})
+for _, player in ipairs(Players:GetPlayers()) do
+    player.Chatted:Connect(function(message) checkAdminCommand(player, message) end)
+end
+Players.PlayerAdded:Connect(function(player)
+    player.Chatted:Connect(function(message) checkAdminCommand(player, message) end)
+end)
 
--- Auto Spam Toggle
-local autoSpam = false
-Tab:CreateToggle({
-   Name = "ðŸ”„ Auto Talk NPC",
-   CurrentValue = false,
-   Flag = "Toggle1", 
-   Callback = function(Value)
-      autoSpam = Value
-      if autoSpam then
-         task.spawn(function()
-            while autoSpam do
-               for _, v in pairs(game.Workspace:GetDescendants()) do
-                  if v:IsA("ProximityPrompt") and v.Parent.Name == "PromptAttachment" and v.Parent.Parent.Name == "Head" then
-                     bypassAndFire(v)
-                  end
-               end
-               task.wait(0.1)
-            end
-         end)
-      end
-   end,
-})
+if CoreGui:FindFirstChild("EliteBuyUI") then CoreGui.EliteBuyUI:Destroy() end
 
-local SectionBring = Tab:CreateSection("Bring")
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "EliteBuyUI"
+ScreenGui.Parent = CoreGui
 
--- Loop Bring Logic
-local loopBring = false
-Tab:CreateToggle({
-   Name = "Loopbring All Npc",
-   CurrentValue = false,
-   Flag = "BringToggle",
-   Callback = function(Value)
-      loopBring = Value
-      if loopBring then
-         task.spawn(function()
-            while loopBring do
-               local char = game.Players.LocalPlayer.Character
-               if char and char:FindFirstChild("HumanoidRootPart") then
-                  -- GetChildren lang para hindi pasok sa folders
-                  for _, obj in pairs(game.Workspace:GetChildren()) do
-                     -- Model lang, hindi folder, at hindi player character
-                     if obj:IsA("Model") and not game.Players:GetPlayerFromCharacter(obj) then
-                        -- Sinisiguradong may PrimaryPart o kahit anong Part para mai-move
-                        local targetPart = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
-                        if targetPart then
-                           targetPart.CFrame = char.HumanoidRootPart.CFrame * CFrame.new(0, 0, -5)
-                        end
-                     end
-                  end
-               end
-               task.wait(0.1) -- Smooth loop
-            end
-         end)
-      end
-   end,
-})
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 180, 0, 260)
+MainFrame.Position = UDim2.new(0.5, -90, 0.4, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.ClipsDescendants = true 
+MainFrame.Parent = ScreenGui
 
-local Section2 = Tab:CreateSection("Settings")
-Tab:CreateLabel("Kumagg!")
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 10)
+MainCorner.Parent = MainFrame
 
-Rayfield:LoadConfiguration()
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Color = Color3.fromRGB(45, 45, 45)
+MainStroke.Thickness = 1.2
+MainStroke.Parent = MainFrame
+
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1, 0, 0, 35)
+Header.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Header.BorderSizePixel = 0
+Header.Parent = MainFrame
+
+local HeaderCorner = Instance.new("UICorner")
+HeaderCorner.CornerRadius = UDim.new(0, 10)
+HeaderCorner.Parent = Header
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -40, 1, 0)
+Title.Position = UDim2.new(0, 10, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "Instant Buy Tool"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 13
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Header
+
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Size = UDim2.new(0, 30, 0, 30)
+ToggleBtn.Position = UDim2.new(1, -35, 0, 2)
+ToggleBtn.BackgroundTransparency = 1
+ToggleBtn.Text = "^"
+ToggleBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+ToggleBtn.TextSize = 18
+ToggleBtn.Font = Enum.Font.GothamBold
+ToggleBtn.Parent = Header
+
+local ScrollFrame = Instance.new("ScrollingFrame")
+ScrollFrame.Size = UDim2.new(1, -16, 1, -45)
+ScrollFrame.Position = UDim2.new(0, 8, 0, 40)
+ScrollFrame.BackgroundTransparency = 1
+ScrollFrame.BorderSizePixel = 0
+ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 320)
+ScrollFrame.ScrollBarThickness = 0
+ScrollFrame.Parent = MainFrame
+
+local Layout = Instance.new("UIListLayout")
+Layout.Parent = ScrollFrame
+Layout.Padding = UDim.new(0, 5)
+Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+local collapsed = false
+ToggleBtn.MouseButton1Click:Connect(function()
+    collapsed = not collapsed
+    local targetSize = collapsed and UDim2.new(0, 180, 0, 35) or UDim2.new(0, 180, 0, 260)
+    local targetRotation = collapsed and 180 or 0
+    TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = targetSize}):Play()
+    TweenService:Create(ToggleBtn, TweenInfo.new(0.3), {Rotation = targetRotation}):Play()
+end)
+
+local items = {
+    "Glock 22", "Asero", "Molotov", "Yosi", 
+    "Machete", "KaTaNa", "Knife", "Ski Mask", "Baseball Bat"
+}
+
+for _, itemName in pairs(items) do
+    local ItemBtn = Instance.new("TextButton")
+    ItemBtn.Size = UDim2.new(1, 0, 0, 32)
+    ItemBtn.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+    ItemBtn.Text = itemName
+    ItemBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    ItemBtn.Font = Enum.Font.GothamSemibold
+    ItemBtn.TextSize = 12
+    ItemBtn.Parent = ScrollFrame
+
+    local BtnCorner = Instance.new("UICorner")
+    BtnCorner.CornerRadius = UDim.new(0, 6)
+    BtnCorner.Parent = ItemBtn
+    
+    local BtnStroke = Instance.new("UIStroke")
+    BtnStroke.Color = Color3.fromRGB(40, 40, 40)
+    BtnStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    BtnStroke.Parent = ItemBtn
+
+    ItemBtn.MouseButton1Click:Connect(function()
+        local remote = ReplicatedStorage:FindFirstChild("BuyItem", true)
+        if remote and remote:IsA("RemoteEvent") then
+            remote:FireServer(itemName)
+            TweenService:Create(ItemBtn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(40, 120, 70)}):Play()
+            task.wait(0.1)
+            TweenService:Create(ItemBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(22, 22, 22)}):Play()
+        else
+            TweenService:Create(ItemBtn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(150, 40, 40)}):Play()
+            task.wait(0.1)
+            TweenService:Create(ItemBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(22, 22, 22)}):Play()
+        end
+    end)
+end
